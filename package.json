@@ -25,7 +25,8 @@
     "socket.io": "^2.4.0",
     "steam-totp": "^2.1.2",
     "steam-user": "^5.2.0",
-    "winston": "^2.4.5"
+    "winston": "^2.4.5",
+    "axios": "^1.11.0"
   },
   "devDependencies": {
     "eslint": "^8.56.0",
