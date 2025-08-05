@@ -5,3 +5,6 @@ sentry
 game_files
 .DS_Store
 .idea
+maFiles
+.venv
+extract_accounts.py

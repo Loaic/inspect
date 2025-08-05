@@ -29,6 +29,14 @@ module.exports = {
         'request_delay': 1100,
         // Amount of milliseconds to wait until a request to Valve is timed out
         'request_ttl': 2000,
+        // Maximum number of Steam login retries before giving up
+        'max_login_retries': 5,
+        // Base delay in milliseconds for Steam login retries (uses exponential backoff)
+        'login_retry_delay': 5000,
+        // Maximum number of CS:GO GC reconnection attempts before giving up
+        'max_gc_reconnect_attempts': 10,
+        // Base delay in milliseconds for CS:GO GC reconnection (uses exponential backoff)
+        'gc_reconnect_delay': 10000,
         // OPTIONAL: Settings for Steam User (https://github.com/DoctorMcKay/node-steam-user#options-)
         'steam_user': {}
     },
