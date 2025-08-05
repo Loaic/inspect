@@ -34,23 +34,33 @@ if (args.steam_data) {
     CONFIG.bot_settings.steam_user.dataDirectory = args.steam_data;
 }
 
-for (let [i, loginData] of CONFIG.logins.entries()) {
-    const settings = Object.assign({}, CONFIG.bot_settings);
-    if (CONFIG.proxies && CONFIG.proxies.length > 0) {
-        const proxy = CONFIG.proxies[i % CONFIG.proxies.length];
+// Initialize bots with async support
+(async function initializeBots() {
+    for (let [i, loginData] of CONFIG.logins.entries()) {
+        const settings = Object.assign({}, CONFIG.bot_settings);
+        
+        // Legacy proxy support (static proxy assignment)
+        if (CONFIG.proxies && CONFIG.proxies.length > 0) {
+            const proxy = CONFIG.proxies[i % CONFIG.proxies.length];
 
-        if (proxy.startsWith('http://')) {
-            settings.steam_user = Object.assign({}, settings.steam_user, {httpProxy: proxy});
-        } else if (proxy.startsWith('socks5://')) {
-            settings.steam_user = Object.assign({}, settings.steam_user, {socksProxy: proxy});
-        } else {
-            console.log(`Invalid proxy '${proxy}' in config, must prefix with http:// or socks5://`);
-            process.exit(1);
+            if (proxy.startsWith('http://')) {
+                settings.steam_user = Object.assign({}, settings.steam_user, {httpProxy: proxy});
+            } else if (proxy.startsWith('socks5://')) {
+                settings.steam_user = Object.assign({}, settings.steam_user, {socksProxy: proxy});
+            } else {
+                console.log(`Invalid proxy '${proxy}' in config, must prefix with http:// or socks5://`);
+                process.exit(1);
+            }
+        }
+
+        try {
+            await botController.addBot(loginData, settings);
+            console.log(`Bot ${loginData.user} initialized successfully`);
+        } catch (error) {
+            console.error(`Failed to initialize bot ${loginData.user}:`, error.message);
         }
     }
-
-    botController.addBot(loginData, settings);
-}
+})();
 
 postgres.connect();
 

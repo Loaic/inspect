@@ -19,8 +19,16 @@ module.exports = {
             'auth': '2FA_TOKEN_2'
         }
     ],
-    // Optional HTTP/SOCKS5 proxies to auto-rotate for each bot in a round-robin
+    // Optional HTTP/SOCKS5 proxies to auto-rotate for each bot in a round-robin (Legacy)
     'proxies': [],
+    // Clash proxy configuration for dynamic proxy switching
+    'clash_proxy': {
+        'enabled': false,                           // Enable Clash proxy integration
+        'clash_api_url': 'http://127.0.0.1:9090',  // Clash API URL
+        'clash_secret': null,                       // Clash API secret (optional)
+        'proxy_port': 7890,                         // Clash HTTP proxy port
+        'proxy_switch_cooldown': 5000               // Minimum time between proxy switches (ms)
+    },
     // Bot settings
     'bot_settings': {
         // Amount of attempts for each request to Valve
