@@ -29,6 +29,13 @@ module.exports = {
         'proxy_port': 7890,                         // Clash HTTP proxy port
         'proxy_switch_cooldown': 5000               // Minimum time between proxy switches (ms)
     },
+    // External proxy configuration (e.g., v2rayA, Clash, etc.)
+    'external_proxy': {
+        'enabled': false,                           // Enable external proxy integration
+        'socks_port': 20170,                        // SOCKS5 proxy port (v2rayA default: 20170)
+        'http_port': 20171,                         // HTTP proxy port (v2rayA default: 20171)
+        'proxy_name': 'external-proxy'              // Proxy name for logging
+    },
     // Bot settings
     'bot_settings': {
         // Amount of attempts for each request to Valve

@@ -34,13 +34,49 @@ if (args.steam_data) {
     CONFIG.bot_settings.steam_user.dataDirectory = args.steam_data;
 }
 
-// Initialize bots with async support
+// Initialize proxy managers and bots
 (async function initializeBots() {
+    let v2rayManager = null;
+    
+    // Initialize V2Ray manager if enabled
+    if (CONFIG.v2ray_proxy && CONFIG.v2ray_proxy.enabled) {
+        const V2RayManager = require('./lib/v2ray_manager');
+        v2rayManager = new V2RayManager(CONFIG.v2ray_proxy);
+        
+        console.log('Starting V2Ray proxy manager...');
+        const v2rayStarted = await v2rayManager.start();
+        
+        if (v2rayStarted) {
+            console.log('V2Ray proxy manager started successfully');
+            
+            // Enable load balancing if configured
+            if (CONFIG.v2ray_proxy.load_balancing) {
+                await v2rayManager.enableLoadBalancing();
+                console.log('V2Ray load balancing enabled');
+            }
+        } else {
+            console.error('Failed to start V2Ray proxy manager');
+            process.exit(1);
+        }
+    }
+    
+    // Initialize bots
     for (let [i, loginData] of CONFIG.logins.entries()) {
         const settings = Object.assign({}, CONFIG.bot_settings);
         
+        // V2Ray proxy configuration
+        if (v2rayManager) {
+            settings.v2ray_proxy = {
+                enabled: true,
+                manager: v2rayManager
+            };
+        }
+        // Clash proxy configuration
+        else if (CONFIG.clash_proxy && CONFIG.clash_proxy.enabled) {
+            settings.clash_proxy = CONFIG.clash_proxy;
+        }
         // Legacy proxy support (static proxy assignment)
-        if (CONFIG.proxies && CONFIG.proxies.length > 0) {
+        else if (CONFIG.proxies && CONFIG.proxies.length > 0) {
             const proxy = CONFIG.proxies[i % CONFIG.proxies.length];
 
             if (proxy.startsWith('http://')) {
@@ -60,6 +96,18 @@ if (args.steam_data) {
             console.error(`Failed to initialize bot ${loginData.user}:`, error.message);
         }
     }
+    
+    // Graceful shutdown handling
+    process.on('SIGINT', async () => {
+        console.log('Shutting down gracefully...');
+        
+        if (v2rayManager) {
+            await v2rayManager.stop();
+            console.log('V2Ray proxy manager stopped');
+        }
+        
+        process.exit(0);
+    });
 })();
 
 postgres.connect();
