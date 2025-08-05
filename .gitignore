@@ -8,3 +8,4 @@ game_files
 maFiles
 .venv
 extract_accounts.py
+*.txt
