@@ -60,7 +60,9 @@ if (args.steam_data) {
         }
     }
     
-    // Initialize bots
+    console.log(`Initializing ${CONFIG.logins.length} bots...`);
+    
+    // Initialize bots with staggered startup to avoid rate limiting
     for (let [i, loginData] of CONFIG.logins.entries()) {
         const settings = Object.assign({}, CONFIG.bot_settings);
         
@@ -91,10 +93,32 @@ if (args.steam_data) {
 
         try {
             await botController.addBot(loginData, settings);
-            console.log(`Bot ${loginData.user} initialized successfully`);
+            console.log(`Bot ${loginData.user} initialization started`);
+            
+            // 添加延迟以避免同时登录过多账号
+            if (i < CONFIG.logins.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // 2秒延迟
+            }
         } catch (error) {
             console.error(`Failed to initialize bot ${loginData.user}:`, error.message);
         }
+    }
+    
+    // 等待机器人初始化完成
+    console.log('Waiting for bots to initialize...');
+    await botController.waitForInitialization();
+    
+    const readyBots = botController.getReadyAmount();
+    const totalBots = botController.bots.length;
+    console.log(`Bot initialization completed: ${readyBots}/${totalBots} bots ready`);
+    
+    if (readyBots === 0) {
+        console.error('No bots are ready! Check your configuration and Steam credentials.');
+        console.log('Bot status:');
+        const botStatus = botController.getBotStatus();
+        botStatus.forEach((status, index) => {
+            console.log(`  ${index + 1}. ${status.username}: ready=${status.ready}, busy=${status.busy}, loginRetries=${status.loginRetries}`);
+        });
     }
     
     // Graceful shutdown handling
@@ -105,6 +129,9 @@ if (args.steam_data) {
             await v2rayManager.stop();
             console.log('V2Ray proxy manager stopped');
         }
+        
+        botController.destroy();
+        console.log('Bot controller destroyed');
         
         process.exit(0);
     });
@@ -276,12 +303,42 @@ app.post('/bulk', (req, res) => {
 });
 
 app.get('/stats', (req, res) => {
+    const botStatus = botController.getBotStatus();
+    const readyBots = botController.getReadyAmount();
+    const totalBots = botController.bots.length;
+    
     res.json({
-        bots_online: botController.getReadyAmount(),
-        bots_total: botController.bots.length,
+        bots_online: readyBots,
+        bots_total: totalBots,
         queue_size: queue.queue.length,
         queue_concurrency: queue.concurrency,
+        bot_details: botStatus,
+        initialization_complete: botController.initializationComplete
     });
+});
+
+app.get('/health', (req, res) => {
+    const readyBots = botController.getReadyAmount();
+    const totalBots = botController.bots.length;
+    const hasOnlineBots = readyBots > 0;
+    const queueHealthy = queue.queue.length < (CONFIG.max_queue_size || 1000);
+    
+    const health = {
+        status: hasOnlineBots && queueHealthy ? 'healthy' : 'unhealthy',
+        bots: {
+            online: readyBots,
+            total: totalBots,
+            healthy: hasOnlineBots
+        },
+        queue: {
+            size: queue.queue.length,
+            healthy: queueHealthy
+        },
+        timestamp: new Date().toISOString()
+    };
+    
+    const statusCode = health.status === 'healthy' ? 200 : 503;
+    res.status(statusCode).json(health);
 });
 
 const http_server = require('http').Server(app);
